@@ -26,7 +26,16 @@ Copy the project file path, then:
 
     pip install https://github.com/MackinationsAi/UDAV2-ControlNet/releases/download/v1.0.0/depth_anything_v2-2024.7.1.0-py2.py3-none-any.whl
 
-Find the "P6_Pose_Depth_Py\checkpoints" folder and move it to the "Depth-Anything-V2-main" folder which should be under your user folder, replace items if necessary.
+Go to https://aaudk.sharepoint.com/:u:/r/sites/MED6_gr02/Delte%20dokumenter/General/checkpoints.zip?csf=1&web=1&e=sFbDfR and download nad extract the checkpoints folder to the Depth Anything V2 repository/project folder.
+
+You can find the Depth Anything V2 repository on your device. You may be able to find it from "C:\Users" and within your user folder.
+
+Put the checkpoints folder inside of the Depth Anything V2 folder.
+
+Open the checkpoints folder, select the "depth_anything_v2_vits.pth" file and copy its direct file path.
+
+Go back to your project folder and open "main.py" and select the environment you have installed the requirements.txt on.
+CTRL+F and search for "model_path" and replace the file path with that of the depth_anything_v2_vits.pth file.
 
 Copy the "dwpose.py" from the project folder.
     Find the "C:\Users\_your_username_\anaconda3\envs\_your_environment_\Lib\site-packages\easy_dwpose\dwpose.py" file and replace that file.
