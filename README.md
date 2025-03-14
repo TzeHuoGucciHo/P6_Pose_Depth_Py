@@ -1,1 +1,33 @@
 # P6_Pose_Depth_Py
+
+Assuming you're using Anaconda environments, open Anaconda Prompt.
+
+conda activate _your_environment_
+
+Copy the project file path, then:
+    cd "your_project_file_path"
+    pip install -r requirements.txt
+
+    cd ~
+
+    pip install easy-dwpose
+
+    git clone git@github.com:reallyigor/easy_dwpose.git
+    cd easy_dwpose
+    pip install -e .
+
+    cd ~
+
+    git clone https://github.com/DepthAnything/Depth-Anything-V2
+    cd Depth-Anything-V2
+    pip install -r requirements.txt
+
+
+    pip install https://github.com/MackinationsAi/UDAV2-ControlNet/releases/download/v1.0.0/depth_anything_v2-2024.7.1.0-py2.py3-none-any.whl
+
+Find the "P6_Pose_Depth_Py\checkpoints" folder and move it to the "Depth-Anything-V2-main" folder which should be under your user folder, replace items if necessary.
+
+Copy the "dwpose.py" from the project folder.
+    Find the "C:\Users\_your_username_\anaconda3\envs\_your_environment_\Lib\site-packages\easy_dwpose\dwpose.py" file and replace that file.
+        Note, _your_username_ and _your_environment_ needs to be adjusted according to your own specifications.
+
