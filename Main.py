@@ -69,7 +69,7 @@ encoder = 'vits'
 depth_model = DepthAnythingV2(**model_configs[encoder])
 
 # Loads pre-trained model weights from the specified file. Change the path accordingly.
-model_path = os.path.join(os.getcwd(), r"C:\Users\Tze Huo Gucci Ho\Depth-Anything-V2\checkpoints\depth_anything_v2_vits.pth")
+model_path = os.path.join(os.path.expanduser("~"), "Depth-Anything-V2", "checkpoints", "depth_anything_v2_vits.pth")
 depth_model.load_state_dict(torch.load(model_path, map_location='cpu'))
 
 # Moves the model to the selected device (CPU/GPU) so that it infer the depth map

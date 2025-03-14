@@ -32,11 +32,6 @@ You can find the Depth Anything V2 repository on your device. You may be able to
 
 Put the checkpoints folder inside of the Depth Anything V2 folder.
 
-Open the checkpoints folder, select the "depth_anything_v2_vits.pth" file and copy its direct file path.
-
-Go back to your project folder and open "main.py" and select the environment you have installed the requirements.txt on.
-CTRL+F and search for "model_path" and replace the file path with that of the depth_anything_v2_vits.pth file.
-
 Copy the "dwpose.py" from the project folder.
     Find the "C:\Users\_your_username_\anaconda3\envs\_your_environment_\Lib\site-packages\easy_dwpose\dwpose.py" file and replace that file.
         Note, _your_username_ and _your_environment_ needs to be adjusted according to your own specifications.
