@@ -2,9 +2,10 @@
 
 Assuming you're using Anaconda environments, open Anaconda Prompt.
 
-conda activate _your_environment_
+    conda activate _your_environment_
 
 Copy the project file path, then:
+    
     cd "your_project_file_path"
     pip install -r requirements.txt
 
