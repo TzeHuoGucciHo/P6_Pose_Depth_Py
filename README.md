@@ -1,5 +1,7 @@
 # P6_Pose_Depth_Py
 
+It is important to keep in mind that neither the project folder for the easy_dwpose and Depth Anything V2 repositories is cloned to this project folder. 
+
 Assuming you're using Anaconda environments, open Anaconda Prompt.
 
     conda activate _your_environment_
@@ -35,3 +37,4 @@ Copy the "dwpose.py" from the project folder.
     Find the "C:\Users\_your_username_\anaconda3\envs\_your_environment_\Lib\site-packages\easy_dwpose\dwpose.py" file and replace that file.
         Note, _your_username_ and _your_environment_ needs to be adjusted according to your own specifications.
 
+If you are having issues with running the main.py script, try finding the line initializing the model_path variable and replace the code efter the "=" symbol with the absolute path to the depth_anything_v2_vits.pth file in the checkpoints folder.
