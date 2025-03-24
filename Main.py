@@ -8,7 +8,7 @@ import os
 
 # --- Script 1: Pose Detection ---
 
-input_image_path = os.path.join(os.getcwd(), "1_Input_Images", "person_0.jpg")
+input_image_path = os.path.join(os.getcwd(), "1_Input_Images", "person_1.jpg")
 input_image = Image.open(input_image_path)
 
 # Keypoint Labels
