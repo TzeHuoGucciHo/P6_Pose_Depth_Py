@@ -13,7 +13,6 @@ def draw_keypoint_labels(image, keypoints):
 
     for i, (x, y) in enumerate(keypoints):
         normalized_keypoint_dict[KEYPOINT_LABELS[i]] = (x, y)
-
         x_pixel, y_pixel = int(x * image.width), int(y * image.height)
         keypoint_dict[KEYPOINT_LABELS[i]] = (x_pixel, y_pixel)
 
@@ -34,127 +33,76 @@ def load_model(device, encoder='vits'):
     model_path = os.path.join(os.path.expanduser("~"), "Depth-Anything-V2", "checkpoints",
                               f"depth_anything_v2_{encoder}.pth")
     depth_model.load_state_dict(torch.load(model_path, map_location='cpu'))
-
     return depth_model.to(device).eval()
 
-def process_depth_image(raw_img, depth_model, device, input_width, input_height):
+def process_depth_image(raw_img, depth_model):
     depth = depth_model.infer_image(raw_img)
-
-    input_height, input_width = raw_img.shape[:2]
-    depth_height, depth_width = depth.shape[:2]
-    scale_factor = min(input_width / depth_width, input_height / depth_height)
-
-    new_depth_width = int(depth_width * scale_factor)
-    new_depth_height = int(depth_height * scale_factor)
-
-    depth_resized = cv2.resize(depth, (new_depth_width, new_depth_height))
-
-    top_padding = (input_height - new_depth_height) // 2
-    bottom_padding = input_height - new_depth_height - top_padding
-    left_padding = (input_width - new_depth_width) // 2
-    right_padding = input_width - new_depth_width - left_padding
-
-    depth_padded = cv2.copyMakeBorder(
-        depth_resized, top_padding, bottom_padding, left_padding, right_padding,
-        cv2.BORDER_CONSTANT, value=0
-    )
-
-    depth_normalized = cv2.normalize(depth_padded, None, 0, 255, cv2.NORM_MINMAX)
+    depth_resized = cv2.resize(depth, (raw_img.shape[1], raw_img.shape[0]))
+    depth_normalized = cv2.normalize(depth_resized, None, 0, 255, cv2.NORM_MINMAX)
     return depth_normalized.astype('uint8')
 
 def calculate_orientation(keypoint_dict):
-    # Get the coordinates of the shoulders
     r_shoulder = keypoint_dict.get("RShoulder")
     l_shoulder = keypoint_dict.get("LShoulder")
-
     if r_shoulder and l_shoulder:
-        r_shoulder_x, _ = r_shoulder
-        l_shoulder_x, _ = l_shoulder
-
-        # If the right shoulder is to the left of the left shoulder in the image, the person is facing front
-        return "front" if r_shoulder_x < l_shoulder_x else "back"
-
-    print("Could not detect shoulder keypoints.")
+        return "front" if r_shoulder[0] < l_shoulder[0] else "back"
     return "undetermined"
 
 def extract_keypoint_colors(image, keypoint_dict):
     keypoint_colors = {}
-    for key, (x_pixel, y_pixel) in keypoint_dict.items():
-        r, g, b = image.getpixel((x_pixel, y_pixel))
-        hex_color = "#{:02x}{:02x}{:02x}".format(r, g, b)
-        keypoint_colors[key] = (r, g, b, hex_color)
-        print(f"{key} - Pixel: ({x_pixel}, {y_pixel}), RGB: ({r}, {g}, {b}), HEX: {hex_color}")
+    for key, (x, y) in keypoint_dict.items():
+        r, g, b = image.getpixel((x, y))
+        keypoint_colors[key] = (r, g, b, f"#{r:02x}{g:02x}{b:02x}")
     return keypoint_colors
 
-def save_results(input_image, pose_image, result_image, depth_image_pil, output_folder, input_filename):
+def save_results(images, output_folder, input_filename, log_data):
     os.makedirs(output_folder, exist_ok=True)
+    for name, img in images.items():
+        img.save(os.path.join(output_folder, f"{input_filename}_{name}.png"))
+    with open(os.path.join(output_folder, f"{input_filename}_log.txt"), "w") as f:
+        f.write(log_data)
 
-    input_image.save(os.path.join(output_folder, f"{input_filename}_overlay_image.png"))
-    pose_image.save(os.path.join(output_folder, f"{input_filename}_pose_image.png"))
-    result_image.save(os.path.join(output_folder, f"{input_filename}_final_result.png"))
-    depth_image_pil.save(os.path.join(output_folder, f"{input_filename}_depth_image.png"))
-
-def main(input_image_path):
-    # Load image
-    input_image = Image.open(input_image_path)
+def process_images_in_folder(input_folder):
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-
-    dwpose = DWposeDetector(device=device)
-    keypoints_output = dwpose(input_image, return_keypoints=True)
-    bodies = keypoints_output['bodies']
-    pose_image = dwpose(input_image, output_type="pil")
-
-    # Draw keypoints
-    pose_image, keypoint_dict, normalized_keypoint_dict = draw_keypoint_labels(pose_image, bodies)
-
-    # Load Depth model
     depth_model = load_model(device)
+    dwpose = DWposeDetector(device=device)
 
-    # Read raw image
-    raw_img = cv2.imread(input_image_path)
+    for filename in os.listdir(input_folder):
+        if filename.lower().endswith(('png', 'jpg', 'jpeg')):
+            input_path = os.path.join(input_folder, filename)
+            input_image = Image.open(input_path)
+            raw_img = cv2.imread(input_path)
 
-    # Process depth image
-    depth_image = process_depth_image(raw_img, depth_model, device, raw_img.shape[1], raw_img.shape[0])
+            keypoints_output = dwpose(input_image, return_keypoints=True)
+            bodies = keypoints_output['bodies']
+            pose_image = dwpose(input_image, output_type="pil")
+            pose_image, keypoint_dict, normalized_keypoint_dict = draw_keypoint_labels(pose_image, bodies)
+            depth_image = process_depth_image(raw_img, depth_model)
+            depth_image_pil = Image.fromarray(depth_image)
+            depth_image_pil, _, _ = draw_keypoint_labels(depth_image_pil, bodies)
+            orientation = calculate_orientation(keypoint_dict)
+            keypoint_colors = extract_keypoint_colors(input_image, keypoint_dict)
 
-    # Create depth image for drawing
-    depth_image_pil = Image.fromarray(depth_image)
+            log_data = "".join(
+                f"{key} - Pixel: ({x}, {y}), RGB: {rgb[:3]}, HEX: {rgb[3]}\n" for key, (x, y), rgb in
+                zip(keypoint_dict.keys(), keypoint_dict.values(), keypoint_colors.values())
+            )
+            log_data += "\n" + "\n".join(
+                f"{key} - Normalized: ({x:.3f}, {y:.3f}), Pixel: ({x_pixel}, {y_pixel}), Depth: {depth_image[y_pixel, x_pixel]}"
+                for key, (x, y) in normalized_keypoint_dict.items()
+                for x_pixel, y_pixel in [keypoint_dict[key]]
+            )
+            log_data += f"\n\nEstimated Orientation: {orientation}\n"
 
-    # Draw keypoints on depth image
-    depth_image_pil, _, _ = draw_keypoint_labels(depth_image_pil, bodies)
-
-    # Print keypoint info
-    for key, (x, y) in normalized_keypoint_dict.items():
-        x_pixel, y_pixel = int(x * raw_img.shape[1]), int(y * raw_img.shape[0])
-        depth_value = depth_image[y_pixel, x_pixel]
-        print(f"{key} - Normalized: ({x:.3f}, {y:.3f}), Pixel: ({x_pixel}, {y_pixel}), Depth: {depth_value}")
-
-    orientation = calculate_orientation(keypoint_dict)
-
-    # Color information for keypoints
-    keypoint_colors = extract_keypoint_colors(input_image, keypoint_dict)
-
-    # Prepare images for saving
-    overlay_image, _, _ = draw_keypoint_labels(input_image, bodies)
-    pose_image_resized = pose_image.resize(overlay_image.size)
-    overlay_image_rgba = overlay_image.convert("RGBA")
-    pose_image_rgba = pose_image_resized.convert("RGBA")
-    result = cv2.addWeighted(np.array(overlay_image_rgba), 1, np.array(pose_image_rgba), 1, 0)
-    result_pil = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
-
-    # Save results
-    input_filename = os.path.splitext(os.path.basename(input_image_path))[0]
-    output_folder = os.path.join(os.getcwd(), "1_Output_Images", input_filename)
-
-    save_results(input_image, pose_image, result_pil, depth_image_pil, output_folder, input_filename)
-
-    print("\nEstimated Orientation:", orientation)
+            input_filename = os.path.splitext(filename)[0]
+            output_folder = os.path.join(os.getcwd(), "1_Output_Images", input_filename)
+            save_results({"overlay_image": input_image, "pose_image": pose_image, "depth_image": depth_image_pil}, output_folder, input_filename, log_data)
+            print(f"Processed {filename}")
 
 KEYPOINT_LABELS = [
     "Nose", "Neck", "RShoulder", "RElbow", "RWrist", "LShoulder", "LElbow", "LWrist",
     "RHip", "RKnee", "RAnkle", "LHip", "LKnee", "LAnkle", "REye", "LEye", "REar", "LEar"
 ]
 
-# Run main function with input image path
-input_image_path = os.path.join(os.getcwd(), "1_Input_Images", "person_1.jpg")
-
-main(input_image_path)
+input_folder = os.path.join(os.getcwd(), "1_Input_Images")
+process_images_in_folder(input_folder)
