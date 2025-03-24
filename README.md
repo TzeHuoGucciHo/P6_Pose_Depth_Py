@@ -9,7 +9,7 @@ Copy the project file path, then:
     cd "your_project_file_path"
     pip install -r requirements.txt
 
-    cd ~
+    cd "C:\Users\your_user_name"
 
     pip install easy-dwpose
 
@@ -17,16 +17,15 @@ Copy the project file path, then:
     cd easy_dwpose
     pip install -e .
 
-    cd ~
+    cd "C:\Users\your_user_name"
 
     git clone https://github.com/DepthAnything/Depth-Anything-V2
     cd Depth-Anything-V2
     pip install -r requirements.txt
 
-
     pip install https://github.com/MackinationsAi/UDAV2-ControlNet/releases/download/v1.0.0/depth_anything_v2-2024.7.1.0-py2.py3-none-any.whl
 
-Go to https://aaudk.sharepoint.com/:u:/r/sites/MED6_gr02/Delte%20dokumenter/General/checkpoints.zip?csf=1&web=1&e=sFbDfR and download nad extract the checkpoints folder to the Depth Anything V2 repository/project folder.
+Go to https://aaudk.sharepoint.com/:u:/r/sites/MED6_gr02/Delte%20dokumenter/General/checkpoints.zip?csf=1&web=1&e=sFbDfR and download and extract the checkpoints folder to the Depth Anything V2 repository/project folder.
 
 You can find the Depth Anything V2 repository on your device. You may be able to find it from "C:\Users" and within your user folder.
 
