@@ -56,12 +56,16 @@ def extract_keypoint_colors(image, keypoint_dict):
         keypoint_colors[key] = (r, g, b, f"#{r:02x}{g:02x}{b:02x}")
     return keypoint_colors
 
-def save_csv(output_folder, input_filename, keypoint_dict, keypoint_colors, depth_image):
+
+def save_csv(output_folder, input_filename, keypoint_dict, keypoint_colors, depth_image, image_size):
     os.makedirs(output_folder, exist_ok=True)
     csv_path = os.path.join(output_folder, f"{input_filename}.csv")
 
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
+
+        writer.writerow([image_size[0], image_size[1]])
+
         for key in KEYPOINT_LABELS:
             if key in keypoint_dict:
                 x_pixel, y_pixel = keypoint_dict[key]
@@ -115,7 +119,7 @@ def process_images_in_folder(input_folder):
                 "depth_image": depth_image_pil,
                 "result_overlay": result_pil
             }, output_folder, input_filename)
-            save_csv(output_folder, input_filename, keypoint_dict, keypoint_colors, depth_image)
+            save_csv(output_folder, input_filename, keypoint_dict, keypoint_colors, depth_image, input_image.size)
             print(f"Processed {filename}", f"\nOrientation: {orientation}")
 
 KEYPOINT_LABELS = [
