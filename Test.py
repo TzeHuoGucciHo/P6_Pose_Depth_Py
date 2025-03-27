@@ -1,11 +1,9 @@
 import torch
 import cv2
-import numpy as np
 from PIL import Image, ImageDraw
 from easy_dwpose import DWposeDetector
 from depth_anything_v2.dpt import DepthAnythingV2
 import os
-import csv
 
 def draw_keypoint_labels(image, keypoints):
     draw = ImageDraw.Draw(image)
@@ -42,12 +40,12 @@ def process_depth_image(raw_img, depth_model):
     depth_normalized = cv2.normalize(depth_resized, None, 0, 255, cv2.NORM_MINMAX)
     return depth_normalized.astype('uint8')
 
-def calculate_orientation(keypoint_dict):
-    r_shoulder = keypoint_dict.get("RShoulder")
-    l_shoulder = keypoint_dict.get("LShoulder")
-    if r_shoulder and l_shoulder:
-        return "front" if r_shoulder[0] < l_shoulder[0] else "back"
-    return "undetermined"
+# def calculate_orientation(keypoint_dict):
+#    r_shoulder = keypoint_dict.get("RShoulder")
+#    l_shoulder = keypoint_dict.get("LShoulder")
+#    if r_shoulder and l_shoulder:
+#        return "front" if r_shoulder[0] < l_shoulder[0] else "back"
+#    return "undetermined"
 
 def extract_keypoint_colors(image, keypoint_dict):
     keypoint_colors = {}
@@ -57,75 +55,77 @@ def extract_keypoint_colors(image, keypoint_dict):
     return keypoint_colors
 
 
-def save_csv(output_folder, input_filename, keypoint_dict, keypoint_colors, depth_image, image_size):
-    os.makedirs(output_folder, exist_ok=True)
-    csv_path = os.path.join(output_folder, f"{input_filename}.csv")
+def save_keypoint_lists(keypoint_dict, keypoint_colors, depth_image):
 
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.writer(f)
+    keypoint_lists = []
 
-        writer.writerow([image_size[0], image_size[1]])
+    for key in KEYPOINT_LABELS:
+        if key in keypoint_dict:
+            x_pixel, y_pixel = keypoint_dict[key]
+            r, g, b, _ = keypoint_colors[key]
+            depth_value = depth_image[y_pixel, x_pixel]
 
-        for key in KEYPOINT_LABELS:
-            if key in keypoint_dict:
-                x_pixel, y_pixel = keypoint_dict[key]
-                r, g, b, _ = keypoint_colors[key]
-                depth_value = depth_image[y_pixel, x_pixel]
-                writer.writerow([x_pixel, y_pixel, r, g, b, depth_value])
+            keypoint_data = [x_pixel, y_pixel, r, g, b, depth_value]
+            keypoint_lists.append(keypoint_data)
 
-def save_results(images, output_folder, input_filename):
-    os.makedirs(output_folder, exist_ok=True)
-    for name, img in images.items():
-        img.save(os.path.join(output_folder, f"{input_filename}_{name}.png"))
+    return keypoint_lists
 
+#def save_results(images, output_folder, input_filename):
+#    os.makedirs(output_folder, exist_ok=True)
+#    for name, img in images.items():
+#        img.save(os.path.join(output_folder, f"{input_filename}_{name}.png"))
 
-def process_images_in_folder(input_folder):
+def process_image(input_path):
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     depth_model = load_model(device)
     dwpose = DWposeDetector(device=device)
 
-    for filename in os.listdir(input_folder):
-        if filename.lower().endswith(('png', 'jpg', 'jpeg')):
-            input_path = os.path.join(input_folder, filename)
-            input_image = Image.open(input_path)
-            raw_img = cv2.imread(input_path)
+    input_image = Image.open(input_path)
+    raw_img = cv2.imread(input_path)
 
-            keypoints_output = dwpose(input_image, return_keypoints=True)
-            bodies = keypoints_output['bodies']
-            pose_image = dwpose(input_image, output_type="pil")
+    keypoints_output = dwpose(input_image, return_keypoints=True)
+    bodies = keypoints_output['bodies']
+    pose_image = dwpose(input_image, output_type="pil")
 
-            pose_image, keypoint_dict, normalized_keypoint_dict = draw_keypoint_labels(pose_image, bodies)
+    pose_image, keypoint_dict, normalized_keypoint_dict = draw_keypoint_labels(pose_image, bodies)
 
-            overlay_image, _, _ = draw_keypoint_labels(input_image.copy(), bodies)
-            pose_image_resized = pose_image.resize(overlay_image.size)
-            overlay_image_rgba = overlay_image.convert("RGBA")
-            pose_image_rgba = pose_image_resized.convert("RGBA")
+    # overlay_image, _, _ = draw_keypoint_labels(input_image.copy(), bodies)
+    # pose_image_resized = pose_image.resize(overlay_image.size)
+    # overlay_image_rgba = overlay_image.convert("RGBA")
+    # pose_image_rgba = pose_image_resized.convert("RGBA")
 
-            result = cv2.addWeighted(np.array(overlay_image_rgba), 1, np.array(pose_image_rgba), 1, 0)
-            result_pil = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
+    # result = cv2.addWeighted(np.array(overlay_image_rgba), 1, np.array(pose_image_rgba), 1, 0)
 
-            depth_image = process_depth_image(raw_img, depth_model)
-            depth_image_pil = Image.fromarray(depth_image)
-            depth_image_pil, _, _ = draw_keypoint_labels(depth_image_pil, bodies)
+    # result_pil = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
 
-            orientation = calculate_orientation(keypoint_dict)
-            keypoint_colors = extract_keypoint_colors(input_image, keypoint_dict)
+    depth_image = process_depth_image(raw_img, depth_model)
+    # depth_image_pil = Image.fromarray(depth_image)
+    # depth_image_pil, _, _ = draw_keypoint_labels(depth_image_pil, bodies)
 
-            input_filename = os.path.splitext(filename)[0]
-            output_folder = os.path.join(os.getcwd(), "1_Output_Images", input_filename)
-            save_results({
-                "input_image": input_image,
-                "pose_image": pose_image,
-                "depth_image": depth_image_pil,
-                "result_overlay": result_pil
-            }, output_folder, input_filename)
-            save_csv(output_folder, input_filename, keypoint_dict, keypoint_colors, depth_image, input_image.size)
-            print(f"Processed {filename}", f"\nOrientation: {orientation}")
+    # orientation = calculate_orientation(keypoint_dict)
+    keypoint_colors = extract_keypoint_colors(input_image, keypoint_dict)
+
+    # input_filename = os.path.splitext(filename)[0]
+    # output_folder = os.path.join(os.getcwd(), "1_Output_Images", input_filename)
+    # save_results({
+    #    "input_image": input_image,
+    #    "pose_image": pose_image,
+    #    "depth_image": depth_image_pil,
+    #    "result_overlay": result_pil
+    # }, output_folder, input_filename)
+
+    keypoint_lists = save_keypoint_lists(keypoint_dict, keypoint_colors, depth_image)
+
+    return input_image.size, keypoint_lists
+
+    # print(f"Processed {filename}", f"\nOrientation: {orientation}")
 
 KEYPOINT_LABELS = [
     "Nose", "Neck", "RShoulder", "RElbow", "RWrist", "LShoulder", "LElbow", "LWrist",
     "RHip", "RKnee", "RAnkle", "LHip", "LKnee", "LAnkle", "REye", "LEye", "REar", "LEar"
 ]
 
-input_folder = os.path.join(os.getcwd(), "1_Input_Images")
-process_images_in_folder(input_folder)
+input_image_path = r"C:\Users\Tze Huo Gucci Ho\Desktop\Git Projects\P6_Pose_Depth_Py\1_Input_Images\person_0.jpg"
+input_image_size, keypoint_lists = process_image(input_image_path)
+
+print(input_image_size, keypoint_lists)
