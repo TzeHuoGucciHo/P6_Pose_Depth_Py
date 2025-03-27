@@ -40,12 +40,12 @@ def process_depth_image(raw_img, depth_model):
     depth_normalized = cv2.normalize(depth_resized, None, 0, 255, cv2.NORM_MINMAX)
     return depth_normalized.astype('uint8')
 
-# def calculate_orientation(keypoint_dict):
-#    r_shoulder = keypoint_dict.get("RShoulder")
-#    l_shoulder = keypoint_dict.get("LShoulder")
-#    if r_shoulder and l_shoulder:
-#        return "front" if r_shoulder[0] < l_shoulder[0] else "back"
-#    return "undetermined"
+def calculate_orientation(keypoint_dict):
+    r_shoulder = keypoint_dict.get("RShoulder")
+    l_shoulder = keypoint_dict.get("LShoulder")
+    if r_shoulder and l_shoulder:
+        return "front" if r_shoulder[0] < l_shoulder[0] else "back"
+    return "undetermined"
 
 def extract_keypoint_colors(image, keypoint_dict):
     keypoint_colors = {}
@@ -102,7 +102,7 @@ def process_image(input_path):
     # depth_image_pil = Image.fromarray(depth_image)
     # depth_image_pil, _, _ = draw_keypoint_labels(depth_image_pil, bodies)
 
-    # orientation = calculate_orientation(keypoint_dict)
+    orientation = calculate_orientation(keypoint_dict)
     keypoint_colors = extract_keypoint_colors(input_image, keypoint_dict)
 
     # input_filename = os.path.splitext(filename)[0]
@@ -116,7 +116,7 @@ def process_image(input_path):
 
     keypoint_lists = save_keypoint_lists(keypoint_dict, keypoint_colors, depth_image)
 
-    return input_image.size, keypoint_lists
+    return input_image.size, orientation, keypoint_lists
 
     # print(f"Processed {filename}", f"\nOrientation: {orientation}")
 
@@ -126,6 +126,6 @@ KEYPOINT_LABELS = [
 ]
 
 input_image_path = r"C:\Users\Tze Huo Gucci Ho\Desktop\Git Projects\P6_Pose_Depth_Py\1_Input_Images\person_0.jpg"
-input_image_size, keypoint_lists = process_image(input_image_path)
+input_image_size, orientation, keypoint_lists = process_image(input_image_path)
 
-print(input_image_size, keypoint_lists)
+print(input_image_size, orientation, keypoint_lists)
