@@ -29,8 +29,7 @@ def load_model(device, encoder='vits'):
     }
 
     depth_model = DepthAnythingV2(**model_configs[encoder])
-    model_path = os.path.join(os.path.expanduser("~"), "Depth-Anything-V2", "checkpoints",
-                              f"depth_anything_v2_{encoder}.pth")
+    model_path = r"C:\Users\Tze Huo Gucci Ho\Desktop\Git Projects\Depth-Anything-V2-main\checkpoints\depth_anything_v2_vits.pth"
     depth_model.load_state_dict(torch.load(model_path, map_location='cpu'))
     return depth_model.to(device).eval()
 
@@ -99,6 +98,7 @@ def process_image(input_path):
     # result_pil = Image.fromarray(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
 
     depth_image = process_depth_image(raw_img, depth_model)
+
     # depth_image_pil = Image.fromarray(depth_image)
     # depth_image_pil, _, _ = draw_keypoint_labels(depth_image_pil, bodies)
 
